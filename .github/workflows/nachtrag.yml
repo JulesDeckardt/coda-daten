@@ -1,0 +1,33 @@
+name: Nachtrag
+
+on:
+  schedule:
+    - cron: '17 4 * * 1,4'   # Montag und Donnerstag: Neues
+    - cron: '17 4 * * 0'     # Sonntag: in geraden Wochen alles auffrischen
+  workflow_dispatch:
+    inputs:
+      modus:
+        description: 'neu oder alles'
+        default: 'neu'
+
+permissions:
+  contents: write
+
+jobs:
+  nachtrag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Daten holen
+        run: |
+          M="${{ github.event.inputs.modus }}"
+          if [ -z "$M" ]; then
+            if [ "$(date -u +%u)" = "7" ]; then [ $(( $(date -u +%V) % 2 )) -eq 0 ] && M=alles || M=nichts; else M=neu; fi
+          fi
+          [ "$M" = "nichts" ] && exit 0
+          python3 nachtrag.py "$M"
+      - name: Ablegen
+        run: |
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add nachtrag.json && (git diff --cached --quiet || git commit -q -m "Nachtrag $(date -u +%F)") && git push -q || true
