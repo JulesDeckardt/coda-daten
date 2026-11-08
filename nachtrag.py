@@ -9,8 +9,8 @@ def get(url, accept='application/json', raw=False, tries=4):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': accept}), timeout=60) as r:
                 b = r.read(); return b.decode('utf-8', 'replace') if raw else json.loads(b)
-        except Exception:
-            time.sleep(3 * (i + 1))
+        except Exception as e:
+            print('Fehler', str(e)[:200]); time.sleep(3 * (i + 1))
     return None
 AWARDS = ['Booker Prize', 'Pulitzer Prize for Fiction', 'National Book Award for Fiction', 'German Book Prize', 'Leipzig Book Fair Prize', 'International Booker Prize',
     "Women's Prize for Fiction", 'Prix Goncourt', 'Wilhelm Raabe Literature Prize', 'Bavarian Book Prize', 'Pulitzer Prize for General Nonfiction', 'National Book Award for Nonfiction',
@@ -25,7 +25,7 @@ def buchpreise(since):
   return out
 def buchpreise1(since, aw):
     names = ' '.join('"%s"@en' % n.replace('"', '\\"') for n in aw)
-    q = f"""SELECT ?workLabel ?authorLabel ?awardEn ?date ?kind WHERE {{
+    q = f"""SELECT ?work ?workLabel ?authorLabel ?awardEn ?date ?kind WHERE {{
       VALUES ?awardEn {{ {names} }} ?award rdfs:label ?awardEn .
       {{ ?x p:P166 ?s . ?s ps:P166 ?award . BIND("win" AS ?kind) }} UNION {{ ?x p:P1411 ?s . ?s ps:P1411 ?award . BIND("nom" AS ?kind) }}
       ?s pq:P585 ?date . FILTER(YEAR(?date) >= {since})
