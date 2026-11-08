@@ -19,7 +19,12 @@ AWARDS = ['Booker Prize', 'Pulitzer Prize for Fiction', 'National Book Award for
     'Bram Stoker Award for Best Novel', 'Kurd-Laßwitz-Preis', 'World Fantasy Award—Novel', 'Edgar Award for Best Novel', 'Gold Dagger', 'Deutscher Krimi Preis',
     'Friedrich-Glauser-Preis', 'Ian Fleming Steel Dagger', 'Thriller Award', 'Shirley Jackson Award', 'Swiss Book Prize', 'Prix Femina']
 def buchpreise(since):
-    names = ' '.join('"%s"@en' % n.replace('"', '\\"') for n in AWARDS)
+  out = []
+  for i in range(0, len(AWARDS), 6):
+    out += buchpreise1(since, AWARDS[i:i + 6]); time.sleep(2)
+  return out
+def buchpreise1(since, aw):
+    names = ' '.join('"%s"@en' % n.replace('"', '\\"') for n in aw)
     q = f"""SELECT ?workLabel ?authorLabel ?awardEn ?date ?kind WHERE {{
       VALUES ?awardEn {{ {names} }} ?award rdfs:label ?awardEn .
       {{ ?x p:P166 ?s . ?s ps:P166 ?award . BIND("win" AS ?kind) }} UNION {{ ?x p:P1411 ?s . ?s ps:P1411 ?award . BIND("nom" AS ?kind) }}
@@ -27,6 +32,7 @@ def buchpreise(since):
       OPTIONAL {{ ?s pq:P1686 ?fw }} BIND(COALESCE(?fw, ?x) AS ?work) FILTER NOT EXISTS {{ ?work wdt:P31 wd:Q5 }}
       OPTIONAL {{ ?work wdt:P50 ?author }} SERVICE wikibase:label {{ bd:serviceParam wikibase:language "de,en". }} }}"""
     j = get('https://query.wikidata.org/sparql?' + urllib.parse.urlencode({'query': q, 'format': 'json'}), 'application/sparql-results+json') or {}
+    print('Abfrage', aw[0], len((j.get('results') or {}).get('bindings') or []))
     out = []
     for r in (j.get('results') or {}).get('bindings') or []:
         t = r.get('workLabel', {}).get('value', ''); a = r.get('authorLabel', {}).get('value', '')
@@ -42,6 +48,7 @@ try:
     old = json.load(open('nachtrag.json'))
     for k in ('buchlisten',):
         if k in old: res[k] = old[k]
+    if not res['buchpreise'] and old.get('buchpreise'): res['buchpreise'] = old['buchpreise']   # Abfrage gescheitert: alten Stand behalten
 except Exception:
     pass
 json.dump(res, open('nachtrag.json', 'w'), ensure_ascii=False, separators=(',', ':'))
