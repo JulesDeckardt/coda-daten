@@ -4,13 +4,13 @@
 import json, sys, time, re, urllib.request, urllib.parse, datetime
 MODE = sys.argv[1] if len(sys.argv) > 1 else 'neu'
 UA = 'Coda/2.3 (private Android-App; Nachtrag)'
-def get(url, accept='application/json', raw=False, tries=4):
+def get(url, accept='application/json', raw=False, tries=3):
     for i in range(tries):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': accept}), timeout=60) as r:
                 b = r.read(); return b.decode('utf-8', 'replace') if raw else json.loads(b)
         except Exception as e:
-            print('Fehler', str(e)[:200]); time.sleep(3 * (i + 1))
+            print('Fehler', str(e)[:200]); time.sleep(75 if '429' in str(e) else 10 * (i + 1))
     return None
 AWARDS = ['Booker Prize', 'Pulitzer Prize for Fiction', 'National Book Award for Fiction', 'German Book Prize', 'Leipzig Book Fair Prize', 'International Booker Prize',
     "Women's Prize for Fiction", 'Prix Goncourt', 'Wilhelm Raabe Literature Prize', 'Bavarian Book Prize', 'Pulitzer Prize for General Nonfiction', 'National Book Award for Nonfiction',
@@ -21,7 +21,7 @@ AWARDS = ['Booker Prize', 'Pulitzer Prize for Fiction', 'National Book Award for
 def buchpreise(since):
   out = []
   for i in range(0, len(AWARDS), 6):
-    out += buchpreise1(since, AWARDS[i:i + 6]); time.sleep(2)
+    out += buchpreise1(since, AWARDS[i:i + 6]); time.sleep(65)   # Wikidata erlaubt zeitweise nur eine Abfrage pro Minute
   return out
 def buchpreise1(since, aw):
     names = ' '.join('"%s"@en' % n.replace('"', '\\"') for n in aw)
